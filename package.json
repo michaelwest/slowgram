@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "HOSTNAME=0.0.0.0 PORT=${PORT:-3000} node .next/standalone/server.js",
     "lint": "next lint",
     "db:migrate": "tsx scripts/migrate.ts",
     "worker": "tsx src/worker.ts",
