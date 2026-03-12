@@ -5,13 +5,17 @@ import { requestMagicLink } from "@/lib/auth";
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams?: Promise<{ sent?: string }>;
+  searchParams?: Promise<{ sent?: string; error?: string }>;
 }) {
   async function submit(formData: FormData) {
     "use server";
     const email = String(formData.get("email") ?? "");
-    await requestMagicLink(email);
-    redirect("/login?sent=1");
+    try {
+      await requestMagicLink(email);
+      redirect("/login?sent=1");
+    } catch {
+      redirect("/login?error=magic-link-failed");
+    }
   }
 
   const resolvedParams = await searchParams;
@@ -32,6 +36,11 @@ export default async function LoginPage({
           </button>
         </form>
         {resolvedParams?.sent ? <p className="muted">Check your inbox for the sign-in link.</p> : null}
+        {resolvedParams?.error ? (
+          <p className="muted">
+            Magic link delivery failed. Check that migrations have run and that Resend is configured correctly.
+          </p>
+        ) : null}
       </div>
     </main>
   );
