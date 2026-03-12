@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 import { mediaAbsolutePath } from "@/lib/paths";
 import { requireOperatorForRoute } from "@/lib/route-auth";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function GET(_: Request, { params }: { params: Promise<{ path: string[] }> }) {
   const unauthorized = await requireOperatorForRoute();
   if (unauthorized) {
