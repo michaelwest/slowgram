@@ -1,5 +1,5 @@
 import { pool } from "./db";
-import { env } from "./env";
+import { getEnv } from "./env";
 import type { DigestDetail, DigestSummary, MediaAsset, PostRecord } from "./types";
 
 export type IngestedPost = {
@@ -201,6 +201,7 @@ export async function getDigestDetail(digestDate: string): Promise<DigestDetail 
 }
 
 export async function listPostsForDate(digestDate: string) {
+  const env = getEnv();
   const result = await pool.query<
     PostRecord & {
       source_username: string;

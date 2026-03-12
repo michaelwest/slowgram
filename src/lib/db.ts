@@ -1,13 +1,24 @@
 import { Pool, type PoolClient } from "pg";
 
-import { env } from "./env";
+import { getEnv } from "./env";
 
-export const pool = new Pool({
-  connectionString: env.DATABASE_URL
+let cachedPool: Pool | null = null;
+
+function getPool() {
+  cachedPool ??= new Pool({
+    connectionString: getEnv().DATABASE_URL
+  });
+  return cachedPool;
+}
+
+export const pool = new Proxy({} as Pool, {
+  get(_target, property, receiver) {
+    return Reflect.get(getPool(), property, receiver);
+  }
 });
 
 export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>) {
-  const client = await pool.connect();
+  const client = await getPool().connect();
   try {
     await client.query("BEGIN");
     const result = await fn(client);

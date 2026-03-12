@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import { decryptText, encryptText } from "./crypto";
 import { pool } from "./db";
-import { env } from "./env";
+import { getEnv } from "./env";
 import { ensureAppDirectories, playwrightStatePath } from "./paths";
 import type { CollectorSession } from "./types";
 
@@ -67,6 +67,7 @@ export async function upsertCollectorSession(input: {
 }
 
 export async function importStorageState(rawJson: string) {
+  const env = getEnv();
   await ensureAppDirectories();
   const destination = playwrightStatePath();
   await writeFile(destination, encryptText(rawJson, env.LOGIN_SESSION_ENCRYPTION_KEY), "utf8");
@@ -79,6 +80,7 @@ export async function importStorageState(rawJson: string) {
 }
 
 export async function loadStorageState() {
+  const env = getEnv();
   const session = await getCollectorSession();
   if (!session) {
     return undefined;
@@ -89,6 +91,7 @@ export async function loadStorageState() {
 }
 
 export async function persistStorageState(rawJson: string) {
+  const env = getEnv();
   await ensureAppDirectories();
   const destination = playwrightStatePath();
   await writeFile(destination, encryptText(rawJson, env.LOGIN_SESSION_ENCRYPTION_KEY), "utf8");

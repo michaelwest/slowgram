@@ -1,14 +1,16 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
-import { env } from "./env";
+import { getEnv } from "./env";
 
 export async function ensureAppDirectories() {
+  const env = getEnv();
   await mkdir(env.mediaRoot, { recursive: true });
   await mkdir(env.playwrightStateRoot, { recursive: true });
 }
 
 export function mediaAbsolutePath(localPath: string) {
+  const env = getEnv();
   return path.join(env.mediaRoot, localPath);
 }
 
@@ -17,5 +19,6 @@ export function mediaRelativePath(...segments: string[]) {
 }
 
 export function playwrightStatePath(filename = "instagram-storage-state.json") {
+  const env = getEnv();
   return path.join(env.playwrightStateRoot, filename);
 }

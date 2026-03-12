@@ -1,5 +1,5 @@
 import { getDigestDetail } from "./posts";
-import { env } from "./env";
+import { getEnv } from "./env";
 import { sendDigestMail } from "./resend-digest";
 
 function truncateCaption(caption: string | null, maxLength = 140) {
@@ -13,6 +13,7 @@ function truncateCaption(caption: string | null, maxLength = 140) {
 }
 
 export async function renderDigestEmail(digestDate: string) {
+  const env = getEnv();
   const digest = await getDigestDetail(digestDate);
   if (!digest) {
     throw new Error(`Digest ${digestDate} not found`);

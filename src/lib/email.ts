@@ -1,4 +1,4 @@
-import { env } from "./env";
+import { getEnv } from "./env";
 
 type ResendPayload = {
   from: string;
@@ -9,6 +9,7 @@ type ResendPayload = {
 };
 
 async function sendEmail(payload: ResendPayload) {
+  const env = getEnv();
   if (!env.RESEND_API_KEY) {
     console.info("Skipping email send because RESEND_API_KEY is not configured", payload.subject);
     return { skipped: true };
@@ -31,6 +32,7 @@ async function sendEmail(payload: ResendPayload) {
 }
 
 export async function sendMagicLinkEmail(email: string, magicLink: string) {
+  const env = getEnv();
   return sendEmail({
     from: env.RESEND_FROM,
     to: [email],

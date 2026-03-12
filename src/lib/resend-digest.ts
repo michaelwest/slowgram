@@ -1,6 +1,7 @@
-import { env } from "./env";
+import { getEnv } from "./env";
 
 export async function sendDigestMail(subject: string, html: string, text: string) {
+  const env = getEnv();
   if (!env.RESEND_API_KEY) {
     console.info("Skipping digest send because RESEND_API_KEY is not configured");
     return { skipped: true };

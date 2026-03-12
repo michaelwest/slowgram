@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { env } from "./env";
+import { getEnv } from "./env";
 import { pool } from "./db";
 import { randomToken, sha256 } from "./crypto";
 import { createAppSession, getAuthenticatedEmail } from "./session-store";
@@ -16,10 +16,12 @@ export async function requireOperator() {
 }
 
 export function isAllowedOperator(email: string | null | undefined) {
+  const env = getEnv();
   return isAllowedOperatorEmail(email, env.ALLOWED_EMAIL);
 }
 
 export async function requestMagicLink(email: string) {
+  const env = getEnv();
   if (email !== env.ALLOWED_EMAIL) {
     return;
   }
@@ -44,6 +46,7 @@ export async function requestMagicLink(email: string) {
 }
 
 export async function consumeMagicLink(email: string, token: string) {
+  const env = getEnv();
   const result = await pool.query<{ id: string }>(
     `
       UPDATE login_tokens

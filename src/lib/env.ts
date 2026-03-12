@@ -17,15 +17,24 @@ const envSchema = z.object({
   LOGIN_SESSION_ENCRYPTION_KEY: z.string().min(32).default("replace-me-with-32-plus-chars")
 });
 
-const parsed = envSchema.safeParse(process.env);
+let cachedEnv: ReturnType<typeof buildEnv> | null = null;
 
-if (!parsed.success) {
-  console.error(parsed.error.flatten().fieldErrors);
-  throw new Error("Invalid environment configuration");
+function buildEnv() {
+  const parsed = envSchema.safeParse(process.env);
+
+  if (!parsed.success) {
+    console.error(parsed.error.flatten().fieldErrors);
+    throw new Error("Invalid environment configuration");
+  }
+
+  return {
+    ...parsed.data,
+    mediaRoot: path.resolve(parsed.data.MEDIA_ROOT),
+    playwrightStateRoot: path.resolve(parsed.data.PLAYWRIGHT_STATE_ROOT)
+  };
 }
 
-export const env = {
-  ...parsed.data,
-  mediaRoot: path.resolve(parsed.data.MEDIA_ROOT),
-  playwrightStateRoot: path.resolve(parsed.data.PLAYWRIGHT_STATE_ROOT)
-};
+export function getEnv() {
+  cachedEnv ??= buildEnv();
+  return cachedEnv;
+}

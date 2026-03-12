@@ -1,12 +1,13 @@
 import { cookies } from "next/headers";
 
-import { env } from "./env";
+import { getEnv } from "./env";
 import { pool } from "./db";
 import { randomToken, sha256 } from "./crypto";
 
 const SESSION_COOKIE = "slowgram_session";
 
 export async function createAppSession(email: string) {
+  const env = getEnv();
   const token = randomToken(32);
   const sessionHash = sha256(token);
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);

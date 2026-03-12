@@ -6,7 +6,7 @@ import { chromium, type BrowserContext } from "@playwright/test";
 
 import { writeAuditEvent } from "./audit";
 import { getCollectorSession, loadStorageState, persistStorageState, upsertCollectorSession } from "./collector-session";
-import { env } from "./env";
+import { getEnv } from "./env";
 import { ensureAppDirectories, mediaAbsolutePath, mediaRelativePath, playwrightStatePath } from "./paths";
 import { ingestPost, postExists } from "./posts";
 import { listEnabledSources, markSourceChecked, upsertSource } from "./sources";
@@ -43,6 +43,7 @@ async function createContext(headed = false) {
 }
 
 export async function bootstrapInstagramSession(options?: { headed?: boolean }) {
+  const env = getEnv();
   const { browser, context, storageState } = await createContext(options?.headed ?? false);
   const page = await context.newPage();
   await page.goto("https://www.instagram.com/accounts/login/", { waitUntil: "domcontentloaded" });

@@ -1,12 +1,13 @@
 import { formatInTimeZone } from "date-fns-tz";
 
 import { pool } from "./db";
-import { env } from "./env";
+import { getEnv } from "./env";
 import { sendDigestEmail } from "./digest-email";
 import { listPostsForDate } from "./posts";
 import { writeAuditEvent } from "./audit";
 
 export async function generateDigestForDate(date = new Date()) {
+  const env = getEnv();
   const digestDate = formatInTimeZone(date, env.DIGEST_TIMEZONE, "yyyy-MM-dd");
   const posts = await listPostsForDate(digestDate);
 
