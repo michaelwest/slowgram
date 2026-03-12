@@ -12,10 +12,11 @@ export default async function LoginPage({
     const email = String(formData.get("email") ?? "");
     try {
       await requestMagicLink(email);
-      redirect("/login?sent=1");
     } catch {
       redirect("/login?error=magic-link-failed");
     }
+
+    redirect("/login?sent=1");
   }
 
   const resolvedParams = await searchParams;
