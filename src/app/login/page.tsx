@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { loginWithPassword } from "@/lib/auth";
+import { ActionNotice } from "@/components/action-notice";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function LoginPage({
   searchParams
@@ -27,11 +29,11 @@ export default async function LoginPage({
             <span>Password</span>
             <input name="password" type="password" required />
           </label>
-          <button className="button primary" type="submit">
+          <SubmitButton className="button primary" pendingLabel="Signing in...">
             Sign in
-          </button>
+          </SubmitButton>
         </form>
-        {resolvedParams?.error ? <p className="muted">Incorrect password.</p> : null}
+        {resolvedParams?.error ? <ActionNotice kind="error" message="Incorrect password." /> : null}
       </div>
     </main>
   );

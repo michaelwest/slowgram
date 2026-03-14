@@ -9,6 +9,7 @@
     "start": "HOSTNAME=0.0.0.0 PORT=${PORT:-3000} node .next/standalone/server.js",
     "lint": "next lint",
     "db:migrate": "tsx scripts/migrate.ts",
+    "storage-state:raw": "tsx scripts/print-storage-state.ts",
     "worker": "tsx src/worker.ts",
     "cron:collect": "tsx src/worker.ts collect",
     "cron:digest": "tsx src/worker.ts digest",

@@ -1,19 +1,33 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireOperator } from "@/lib/auth";
 import { discoverFollowedAccounts } from "@/lib/instagram";
 import { listSources, updateSourceFlags, upsertSource } from "@/lib/sources";
+import { ActionNotice } from "@/components/action-notice";
+import { SubmitButton } from "@/components/submit-button";
+import { encodeActionMessage, extractErrorMessage } from "@/lib/action-state";
 
-export default async function SourcesPage() {
+export default async function SourcesPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ success?: string; error?: string }>;
+}) {
   await requireOperator();
-  const sources = await listSources();
+  const [sources, params] = await Promise.all([listSources(), searchParams]);
 
   async function addSource(formData: FormData) {
     "use server";
     await requireOperator();
-    await upsertSource(String(formData.get("username") ?? ""));
-    revalidatePath("/sources");
+    try {
+      const username = String(formData.get("username") ?? "");
+      await upsertSource(username);
+      revalidatePath("/sources");
+      redirect(`/sources?success=${encodeActionMessage(`Added @${username.replace(/^@/, "")}`)}`);
+    } catch (error) {
+      redirect(`/sources?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   async function toggleSource(formData: FormData) {
@@ -22,18 +36,28 @@ export default async function SourcesPage() {
     const id = String(formData.get("id") ?? "");
     const nextEnabled = String(formData.get("nextEnabled")) === "true";
     const nextExcluded = String(formData.get("nextExcluded")) === "true";
-    await updateSourceFlags(id, {
-      is_enabled: nextEnabled,
-      is_excluded: nextExcluded
-    });
-    revalidatePath("/sources");
+    try {
+      await updateSourceFlags(id, {
+        is_enabled: nextEnabled,
+        is_excluded: nextExcluded
+      });
+      revalidatePath("/sources");
+      redirect("/sources?success=Source%20updated");
+    } catch (error) {
+      redirect(`/sources?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   async function discover() {
     "use server";
     await requireOperator();
-    await discoverFollowedAccounts();
-    revalidatePath("/sources");
+    try {
+      const discovered = await discoverFollowedAccounts();
+      revalidatePath("/sources");
+      redirect(`/sources?success=${encodeActionMessage(`Discovered ${discovered.length} accounts`)}`);
+    } catch (error) {
+      redirect(`/sources?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   return (
@@ -50,15 +74,17 @@ export default async function SourcesPage() {
 
       <div className="grid cols-2">
         <section className="panel stack">
+          {params?.success ? <ActionNotice kind="success" message={params.success} /> : null}
+          {params?.error ? <ActionNotice kind="error" message={params.error} /> : null}
           <h2 style={{ margin: 0 }}>Add a profile</h2>
           <form action={addSource} className="row">
             <label className="field" style={{ flex: 1 }}>
               <span>Instagram username</span>
               <input name="username" placeholder="example_handle" required />
             </label>
-            <button className="button primary" type="submit">
+            <SubmitButton className="button primary" pendingLabel="Adding...">
               Add source
-            </button>
+            </SubmitButton>
           </form>
         </section>
 
@@ -66,9 +92,9 @@ export default async function SourcesPage() {
           <h2 style={{ margin: 0 }}>Auto-discovery</h2>
           <p className="muted">Pull your current followed accounts into the source list, then enable or exclude them.</p>
           <form action={discover}>
-            <button className="button subtle" type="submit">
+            <SubmitButton className="button subtle" pendingLabel="Discovering...">
               Discover followed accounts
-            </button>
+            </SubmitButton>
           </form>
         </section>
       </div>
@@ -99,17 +125,17 @@ export default async function SourcesPage() {
                       <input type="hidden" name="id" value={source.id} />
                       <input type="hidden" name="nextEnabled" value={String(!source.is_enabled)} />
                       <input type="hidden" name="nextExcluded" value={String(source.is_excluded)} />
-                      <button className="button subtle" type="submit">
+                      <SubmitButton className="button subtle" pendingLabel="Updating...">
                         {source.is_enabled ? "Disable" : "Enable"}
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={toggleSource}>
                       <input type="hidden" name="id" value={source.id} />
                       <input type="hidden" name="nextEnabled" value={String(source.is_enabled)} />
                       <input type="hidden" name="nextExcluded" value={String(!source.is_excluded)} />
-                      <button className="button subtle" type="submit">
+                      <SubmitButton className="button subtle" pendingLabel="Updating...">
                         {source.is_excluded ? "Include" : "Exclude"}
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 </td>

@@ -1,29 +1,47 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireOperator } from "@/lib/auth";
 import { getCollectorSession, importStorageState } from "@/lib/collector-session";
 import { bootstrapInstagramSession } from "@/lib/instagram";
+import { ActionNotice } from "@/components/action-notice";
+import { SubmitButton } from "@/components/submit-button";
+import { encodeActionMessage, extractErrorMessage } from "@/lib/action-state";
 
-export default async function SessionPage() {
+export default async function SessionPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ success?: string; error?: string }>;
+}) {
   await requireOperator();
-  const session = await getCollectorSession();
+  const [session, params] = await Promise.all([getCollectorSession(), searchParams]);
 
   async function importState(formData: FormData) {
     "use server";
     await requireOperator();
-    const raw = String(formData.get("storageState") ?? "");
-    await importStorageState(raw);
-    revalidatePath("/session");
-    revalidatePath("/");
+    try {
+      const raw = String(formData.get("storageState") ?? "");
+      await importStorageState(raw);
+      revalidatePath("/session");
+      revalidatePath("/");
+      redirect("/session?success=Storage%20state%20imported");
+    } catch (error) {
+      redirect(`/session?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   async function refreshHeadless() {
     "use server";
     await requireOperator();
-    await bootstrapInstagramSession({ headed: false });
-    revalidatePath("/session");
-    revalidatePath("/");
+    try {
+      await bootstrapInstagramSession({ headed: false });
+      revalidatePath("/session");
+      revalidatePath("/");
+      redirect("/session?success=Instagram%20session%20refreshed");
+    } catch (error) {
+      redirect(`/session?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   return (
@@ -40,15 +58,17 @@ export default async function SessionPage() {
 
       <div className="grid cols-2">
         <section className="panel stack">
+          {params?.success ? <ActionNotice kind="success" message={params.success} /> : null}
+          {params?.error ? <ActionNotice kind="error" message={params.error} /> : null}
           <h2 style={{ margin: 0 }}>Current status</h2>
           <span className="badge">{session?.last_login_at ? "Session available" : "No session"}</span>
           <p className="muted">Last login: {session?.last_login_at ? new Date(session.last_login_at).toLocaleString() : "Never"}</p>
           <p className="muted">Challenge state: {session?.challenge_state ?? "None"}</p>
           <p className="muted">Last error: {session?.last_error ?? "None"}</p>
           <form action={refreshHeadless}>
-            <button className="button primary" type="submit">
+            <SubmitButton className="button primary" pendingLabel="Refreshing session...">
               Refresh using env credentials
-            </button>
+            </SubmitButton>
           </form>
         </section>
 
@@ -62,9 +82,9 @@ export default async function SessionPage() {
               <span>Storage state JSON</span>
               <textarea name="storageState" rows={14} required />
             </label>
-            <button className="button subtle" type="submit">
+            <SubmitButton className="button subtle" pendingLabel="Importing state...">
               Import state
-            </button>
+            </SubmitButton>
           </form>
         </section>
       </div>

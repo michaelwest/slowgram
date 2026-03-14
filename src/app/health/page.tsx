@@ -1,15 +1,23 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireOperator } from "@/lib/auth";
 import { getCollectorSession } from "@/lib/collector-session";
 import { sendDigestForDate } from "@/lib/digests";
 import { collectLatestPosts, discoverFollowedAccounts } from "@/lib/instagram";
 import { pool } from "@/lib/db";
+import { ActionNotice } from "@/components/action-notice";
+import { SubmitButton } from "@/components/submit-button";
+import { encodeActionMessage, extractErrorMessage } from "@/lib/action-state";
 
-export default async function HealthPage() {
+export default async function HealthPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ success?: string; error?: string }>;
+}) {
   await requireOperator();
-  const [session, audits] = await Promise.all([
+  const [session, audits, params] = await Promise.all([
     getCollectorSession(),
     pool.query<{ event_type: string; level: string; message: string; created_at: Date }>(
       `
@@ -18,31 +26,47 @@ export default async function HealthPage() {
         ORDER BY created_at DESC
         LIMIT 25
       `
-    )
+    ),
+    searchParams
   ]);
 
   async function runCollection() {
     "use server";
     await requireOperator();
-    await collectLatestPosts();
-    revalidatePath("/health");
-    revalidatePath("/");
+    try {
+      const results = await collectLatestPosts();
+      revalidatePath("/health");
+      revalidatePath("/");
+      redirect(`/health?success=${encodeActionMessage(`Collection finished for ${results.length} sources`)}`);
+    } catch (error) {
+      redirect(`/health?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   async function runDiscovery() {
     "use server";
     await requireOperator();
-    await discoverFollowedAccounts();
-    revalidatePath("/health");
-    revalidatePath("/sources");
+    try {
+      const discovered = await discoverFollowedAccounts();
+      revalidatePath("/health");
+      revalidatePath("/sources");
+      redirect(`/health?success=${encodeActionMessage(`Discovered ${discovered.length} accounts`)}`);
+    } catch (error) {
+      redirect(`/health?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   async function runDigest() {
     "use server";
     await requireOperator();
-    await sendDigestForDate();
-    revalidatePath("/health");
-    revalidatePath("/digests");
+    try {
+      const result = await sendDigestForDate();
+      revalidatePath("/health");
+      revalidatePath("/digests");
+      redirect(`/health?success=${encodeActionMessage(`Digest run complete for ${result.digestDate}`)}`);
+    } catch (error) {
+      redirect(`/health?error=${encodeActionMessage(extractErrorMessage(error))}`);
+    }
   }
 
   return (
@@ -59,6 +83,8 @@ export default async function HealthPage() {
 
       <div className="grid cols-3">
         <section className="panel stack">
+          {params?.success ? <ActionNotice kind="success" message={params.success} /> : null}
+          {params?.error ? <ActionNotice kind="error" message={params.error} /> : null}
           <span className="muted">Session state</span>
           <strong>{session?.last_login_at ? "Ready" : "Missing"}</strong>
           <span className="muted">{session?.challenge_state ?? "No challenge"}</span>
@@ -67,19 +93,19 @@ export default async function HealthPage() {
           <span className="muted">Manual actions</span>
           <div className="row">
             <form action={runDiscovery}>
-              <button className="button subtle" type="submit">
+              <SubmitButton className="button subtle" pendingLabel="Discovering...">
                 Discover
-              </button>
+              </SubmitButton>
             </form>
             <form action={runCollection}>
-              <button className="button primary" type="submit">
+              <SubmitButton className="button primary" pendingLabel="Collecting...">
                 Collect now
-              </button>
+              </SubmitButton>
             </form>
             <form action={runDigest}>
-              <button className="button subtle" type="submit">
+              <SubmitButton className="button subtle" pendingLabel="Sending digest...">
                 Send digest
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </section>

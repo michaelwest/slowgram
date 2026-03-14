@@ -114,6 +114,11 @@ textarea {
   cursor: pointer;
 }
 
+.button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 .button.primary {
   background: var(--accent);
   color: white;
@@ -210,6 +215,26 @@ textarea {
   border-radius: 18px;
   border: 1px dashed var(--line);
   background: rgba(255, 255, 255, 0.52);
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.notice.success {
+  color: var(--ok);
+  border-color: rgba(47, 107, 79, 0.25);
+  background: rgba(228, 244, 234, 0.9);
+}
+
+.notice.error {
+  color: var(--error);
+  border-color: rgba(152, 43, 43, 0.25);
+  background: rgba(250, 230, 230, 0.92);
 }
 
 @media (max-width: 900px) {
