@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import path from "node:path";
 
 import { z } from "zod";
@@ -7,6 +9,7 @@ const envSchema = z.object({
   APP_BASE_URL: z.string().url(),
   SESSION_SECRET: z.string().min(32),
   ALLOWED_EMAIL: z.string().email(),
+  OPERATOR_PASSWORD: z.string().min(8).default("change-this-password"),
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_FROM: z.string().min(1).default("Slowgram <digest@example.com>"),
   MEDIA_ROOT: z.string().default("./data/media"),

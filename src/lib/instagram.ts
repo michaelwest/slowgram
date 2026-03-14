@@ -29,9 +29,21 @@ type ScrapedPost = {
   media: ScrapedMedia[];
 };
 
-async function createContext(headed = false) {
+function isConnectionError(error: unknown) {
+  return error instanceof Error && /ECONNREFUSED|connect/i.test(error.message);
+}
+
+async function createContext(headed = false, options?: { allowMissingDatabase?: boolean }) {
   await ensureAppDirectories();
-  const session = await getCollectorSession();
+  let session = null;
+  try {
+    session = await getCollectorSession();
+  } catch (error) {
+    if (!options?.allowMissingDatabase || !isConnectionError(error)) {
+      throw error;
+    }
+  }
+
   const storageState = session?.session_state_path ?? playwrightStatePath();
   const decryptedState = session ? await loadStorageState().catch(() => undefined) : undefined;
 
@@ -44,7 +56,9 @@ async function createContext(headed = false) {
 
 export async function bootstrapInstagramSession(options?: { headed?: boolean }) {
   const env = getEnv();
-  const { browser, context, storageState } = await createContext(options?.headed ?? false);
+  const { browser, context, storageState } = await createContext(options?.headed ?? false, {
+    allowMissingDatabase: true
+  });
   const page = await context.newPage();
   await page.goto("https://www.instagram.com/accounts/login/", { waitUntil: "domcontentloaded" });
 
@@ -61,14 +75,28 @@ export async function bootstrapInstagramSession(options?: { headed?: boolean }) 
 
   const state = await context.storageState();
   await persistStorageState(JSON.stringify(state));
-  await upsertCollectorSession({
-    sessionStatePath: storageState,
-    lastLoginAt: new Date(),
-    challengeState: null,
-    lastError: null
-  });
+  try {
+    await upsertCollectorSession({
+      sessionStatePath: storageState,
+      lastLoginAt: new Date(),
+      challengeState: null,
+      lastError: null
+    });
+  } catch (error) {
+    if (!isConnectionError(error)) {
+      throw error;
+    }
+    console.warn("Skipping collector_sessions update because the database is unavailable");
+  }
   await browser.close();
-  await writeAuditEvent("collector.session.bootstrap", "Instagram session stored", { storageState });
+  try {
+    await writeAuditEvent("collector.session.bootstrap", "Instagram session stored", { storageState });
+  } catch (error) {
+    if (!isConnectionError(error)) {
+      throw error;
+    }
+    console.warn("Skipping audit log because the database is unavailable");
+  }
   return storageState;
 }
 

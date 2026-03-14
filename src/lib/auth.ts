@@ -20,6 +20,16 @@ export function isAllowedOperator(email: string | null | undefined) {
   return isAllowedOperatorEmail(email, env.ALLOWED_EMAIL);
 }
 
+export async function loginWithPassword(password: string) {
+  const env = getEnv();
+  if (password !== env.OPERATOR_PASSWORD) {
+    return false;
+  }
+
+  await createAppSession(env.ALLOWED_EMAIL);
+  return true;
+}
+
 export async function requestMagicLink(email: string) {
   const env = getEnv();
   if (email !== env.ALLOWED_EMAIL) {

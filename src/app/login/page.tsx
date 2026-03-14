@@ -1,22 +1,17 @@
 import { redirect } from "next/navigation";
 
-import { requestMagicLink } from "@/lib/auth";
+import { loginWithPassword } from "@/lib/auth";
 
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams?: Promise<{ sent?: string; error?: string }>;
+  searchParams?: Promise<{ error?: string }>;
 }) {
   async function submit(formData: FormData) {
     "use server";
-    const email = String(formData.get("email") ?? "");
-    try {
-      await requestMagicLink(email);
-    } catch {
-      redirect("/login?error=magic-link-failed");
-    }
-
-    redirect("/login?sent=1");
+    const password = String(formData.get("password") ?? "");
+    const ok = await loginWithPassword(password);
+    redirect(ok ? "/" : "/login?error=invalid-password");
   }
 
   const resolvedParams = await searchParams;
@@ -29,19 +24,14 @@ export default async function LoginPage({
         </div>
         <form action={submit} className="stack">
           <label className="field">
-            <span>Email address</span>
-            <input name="email" type="email" required />
+            <span>Password</span>
+            <input name="password" type="password" required />
           </label>
           <button className="button primary" type="submit">
-            Send magic link
+            Sign in
           </button>
         </form>
-        {resolvedParams?.sent ? <p className="muted">Check your inbox for the sign-in link.</p> : null}
-        {resolvedParams?.error ? (
-          <p className="muted">
-            Magic link delivery failed. Check that migrations have run and that Resend is configured correctly.
-          </p>
-        ) : null}
+        {resolvedParams?.error ? <p className="muted">Incorrect password.</p> : null}
       </div>
     </main>
   );
