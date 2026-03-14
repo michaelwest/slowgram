@@ -35,10 +35,13 @@ export default async function HealthPage({
     await requireOperator();
     let message = "Collection finished";
     try {
-      const results = await collectLatestPosts();
+      const summary = await collectLatestPosts();
       revalidatePath("/health");
       revalidatePath("/");
-      message = `Collection finished for ${results.length} sources`;
+      message =
+        summary.totalIngested > 0
+          ? `Captured ${summary.totalIngested} posts from ${summary.sourceCount} sources`
+          : `Collected 0 new posts from ${summary.sourceCount} sources`;
     } catch (error) {
       redirect(`/health?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }

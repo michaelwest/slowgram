@@ -230,13 +230,19 @@ export async function discoverFollowedAccounts() {
 export async function collectLatestPosts() {
   const sources = await listEnabledSources();
   const { browser, context } = await createContext(false);
-  const results: Array<{ username: string; ingested: number }> = [];
+  const results: Array<{ username: string; scraped: number; ingested: number; error?: string }> = [];
 
   for (const source of sources) {
     try {
       await markSourceChecked(source.id, "checking");
       const posts = await scrapeProfile(context, source.instagram_username);
       let ingested = 0;
+
+      if (posts.length === 0) {
+        await writeAuditEvent("collector.empty", "No posts found on profile", {
+          username: source.instagram_username
+        });
+      }
 
       for (const post of posts) {
         if (post.postType !== "image") {
@@ -286,7 +292,7 @@ export async function collectLatestPosts() {
       }
 
       await markSourceChecked(source.id, "ok", true);
-      results.push({ username: source.instagram_username, ingested });
+      results.push({ username: source.instagram_username, scraped: posts.length, ingested });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown collector error";
       await markSourceChecked(source.id, "error");
@@ -295,10 +301,18 @@ export async function collectLatestPosts() {
         username: source.instagram_username,
         error: message
       }, "error");
+      results.push({ username: source.instagram_username, scraped: 0, ingested: 0, error: message });
     }
   }
 
   await browser.close();
-  await writeAuditEvent("collector.complete", "Collection finished", { results });
-  return results;
+  const summary = {
+    sourceCount: results.length,
+    totalScraped: results.reduce((sum, item) => sum + item.scraped, 0),
+    totalIngested: results.reduce((sum, item) => sum + item.ingested, 0),
+    errorCount: results.filter((item) => item.error).length,
+    results
+  };
+  await writeAuditEvent("collector.complete", "Collection finished", summary);
+  return summary;
 }

@@ -222,8 +222,8 @@ export async function listPostsForDate(digestDate: string) {
         ) AS media_assets
       FROM posts p
       JOIN sources s ON s.id = p.source_id
-      WHERE DATE(COALESCE(p.posted_at, p.discovered_at) AT TIME ZONE $2) = $1::date
-      ORDER BY COALESCE(p.posted_at, p.discovered_at) DESC, s.instagram_username ASC
+      WHERE DATE(p.discovered_at AT TIME ZONE $2) = $1::date
+      ORDER BY p.discovered_at DESC, COALESCE(p.posted_at, p.discovered_at) DESC, s.instagram_username ASC
     `,
     [digestDate, env.DIGEST_TIMEZONE]
   );
