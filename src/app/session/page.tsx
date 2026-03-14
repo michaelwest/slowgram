@@ -25,10 +25,10 @@ export default async function SessionPage({
       await importStorageState(raw);
       revalidatePath("/session");
       revalidatePath("/");
-      redirect("/session?success=Storage%20state%20imported");
     } catch (error) {
       redirect(`/session?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect("/session?success=Storage%20state%20imported");
   }
 
   async function refreshHeadless() {
@@ -38,10 +38,10 @@ export default async function SessionPage({
       await bootstrapInstagramSession({ headed: false });
       revalidatePath("/session");
       revalidatePath("/");
-      redirect("/session?success=Instagram%20session%20refreshed");
     } catch (error) {
       redirect(`/session?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect("/session?success=Instagram%20session%20refreshed");
   }
 
   return (

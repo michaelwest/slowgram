@@ -33,40 +33,46 @@ export default async function HealthPage({
   async function runCollection() {
     "use server";
     await requireOperator();
+    let message = "Collection finished";
     try {
       const results = await collectLatestPosts();
       revalidatePath("/health");
       revalidatePath("/");
-      redirect(`/health?success=${encodeActionMessage(`Collection finished for ${results.length} sources`)}`);
+      message = `Collection finished for ${results.length} sources`;
     } catch (error) {
       redirect(`/health?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect(`/health?success=${encodeActionMessage(message)}`);
   }
 
   async function runDiscovery() {
     "use server";
     await requireOperator();
+    let message = "Discovery complete";
     try {
       const discovered = await discoverFollowedAccounts();
       revalidatePath("/health");
       revalidatePath("/sources");
-      redirect(`/health?success=${encodeActionMessage(`Discovered ${discovered.length} accounts`)}`);
+      message = `Discovered ${discovered.length} accounts`;
     } catch (error) {
       redirect(`/health?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect(`/health?success=${encodeActionMessage(message)}`);
   }
 
   async function runDigest() {
     "use server";
     await requireOperator();
+    let message = "Digest run complete";
     try {
       const result = await sendDigestForDate();
       revalidatePath("/health");
       revalidatePath("/digests");
-      redirect(`/health?success=${encodeActionMessage(`Digest run complete for ${result.digestDate}`)}`);
+      message = `Digest run complete for ${result.digestDate}`;
     } catch (error) {
       redirect(`/health?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect(`/health?success=${encodeActionMessage(message)}`);
   }
 
   return (

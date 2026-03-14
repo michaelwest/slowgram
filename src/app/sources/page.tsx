@@ -20,14 +20,16 @@ export default async function SourcesPage({
   async function addSource(formData: FormData) {
     "use server";
     await requireOperator();
+    let message = "Source added";
     try {
       const username = String(formData.get("username") ?? "");
       await upsertSource(username);
       revalidatePath("/sources");
-      redirect(`/sources?success=${encodeActionMessage(`Added @${username.replace(/^@/, "")}`)}`);
+      message = `Added @${username.replace(/^@/, "")}`;
     } catch (error) {
       redirect(`/sources?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect(`/sources?success=${encodeActionMessage(message)}`);
   }
 
   async function toggleSource(formData: FormData) {
@@ -42,22 +44,24 @@ export default async function SourcesPage({
         is_excluded: nextExcluded
       });
       revalidatePath("/sources");
-      redirect("/sources?success=Source%20updated");
     } catch (error) {
       redirect(`/sources?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect("/sources?success=Source%20updated");
   }
 
   async function discover() {
     "use server";
     await requireOperator();
+    let message = "Discovery complete";
     try {
       const discovered = await discoverFollowedAccounts();
       revalidatePath("/sources");
-      redirect(`/sources?success=${encodeActionMessage(`Discovered ${discovered.length} accounts`)}`);
+      message = `Discovered ${discovered.length} accounts`;
     } catch (error) {
       redirect(`/sources?error=${encodeActionMessage(extractErrorMessage(error))}`);
     }
+    redirect(`/sources?success=${encodeActionMessage(message)}`);
   }
 
   return (
